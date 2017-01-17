@@ -1,0 +1,11 @@
+# Set IP and port of other RPi.
+IP = "punpun.xyz:8081"
+
+# Set port to listen to when primary.
+port = 8081
+
+# Set interval in seconds at which to execute script.
+interval = 1
+
+# Set path to script to run.
+script = "/bin/false"
