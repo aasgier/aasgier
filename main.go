@@ -2,8 +2,11 @@ package main
 
 import (
 	"bufio"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
-	"net"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -29,9 +32,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	kp, err := tls.LoadX509KeyPair("./certs/aasgier.pem", "./certs/aasgier.key")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	cert := tls.Config{
+		Certificates:       []tls.Certificate{kp},
+		InsecureSkipVerify: true,
+	}
+
 	// Check if TCP is running on the other RPi, set as primary accordingly.
 	var primary bool
-	conn, err := net.Dial("tcp", conf.IP)
+	conn, err := tls.Dial("tcp", conf.IP, &cert)
 	if err == nil {
 		primary = true
 	}
@@ -61,12 +74,36 @@ func main() {
 	} else {
 		fmt.Println("[secondary] Launching TCP listener...\n")
 
-		ln, err := net.Listen("tcp", ":"+strconv.Itoa(conf.Port))
+		// Create a pool of trusted certs (in our case only our own).
+		certPool := x509.NewCertPool()
+		pem, err := ioutil.ReadFile("./certs/aasgier.pem")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		conn, err = ln.Accept()
+		certPool.AppendCertsFromPEM(pem)
+
+		kp, err := tls.LoadX509KeyPair("./certs/aasgier.pem", "./certs/aasgier.key")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		cert := tls.Config{
+			Certificates: []tls.Certificate{kp},
+			ClientAuth:   tls.RequireAndVerifyClientCert,
+			ClientCAs:    certPool,
+		}
+
+		now := time.Now()
+		cert.Time = func() time.Time { return now }
+		cert.Rand = rand.Reader
+
+		ln, err := tls.Listen("tcp", ":"+strconv.Itoa(conf.Port), &cert)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		conn, err := ln.Accept()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)

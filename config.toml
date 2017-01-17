@@ -8,4 +8,4 @@ port = 8081
 interval = 1
 
 # Set path to script to run.
-script = "/bin/false"
+script = "/bin/true"
