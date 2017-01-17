@@ -5,7 +5,7 @@
 # Set if the script runs on the primary or secondary RPi.
 primary=true
 
-# Set IP address to ping.
+# Set IP address of RPi to ping.
 ip='45.32.184.111'
 
 # Set interval in seconds at which to ping.
@@ -25,6 +25,15 @@ file='/tmp/exit'
 
 ping=$(ping -q -c 1 -W "$wait" "$ip")
 
+# This functions pinrt a string to stderr if $1 (the exit status) is not 0.
+print () {
+	if test "$1" -eq 0; then
+		echo "$2"
+	else
+		echo "$2" >&2
+	fi
+}
+
 while true; do
 	if "$primary"; then
 		echo 'Running on: primary'
@@ -32,22 +41,23 @@ while true; do
 		"$script"
 
 		status="$?"
-		echo "Script executed with exit status: $status"
+		print "$status" "Primary is down, script executed on secondary with exit status: $status"
 		echo "$status" > "$file"
 	else
 		echo 'Running on: secondary'
 
-		if echo "$ping" | grep '1 received' > '/dev/null'; then
+		if echo "$ping" | grep '1 received' >'/dev/null'; then
 			status=$(ssh "TODO@$ip" cat "$file")
-			echo "Script executed on primary with exit status: $status"
+			print "$status" "Primary is down, script executed on secondary with exit status: $status"
 		else
 			"$script"
 
 			status="$?"
-			echo "Primary is down, script executed on secondary with exit status: $status"
+			print "$status" "Primary is down, script executed on secondary with exit status: $status"
 			echo "$status" > "$file"
 		fi
 	fi
 
+	echo
 	sleep $interval
 done
