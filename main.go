@@ -1,19 +1,17 @@
 package main
 
 import (
-	"bufio"
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/cenkalti/rpc2"
 )
 
 type config struct {
@@ -21,6 +19,54 @@ type config struct {
 	Port     int
 	Interval time.Duration
 	Script   string
+}
+
+func client(i time.Duration, c *tls.Conn, s string) error {
+	type Args struct{ S string }
+	type Reply string
+
+	clt := rpc2.NewClient(c)
+	clt.Handle("script", func(client *rpc2.Client, args *Args, reply *Reply) error {
+		*reply = Reply(args.S)
+
+		return nil
+	})
+
+	for {
+		go clt.Run()
+
+		var r Reply
+		clt.Call("script", Args{s}, &r)
+		fmt.Println(r)
+
+		time.Sleep(i * time.Second)
+	}
+
+	return nil
+}
+
+func server(p int, t *tls.Config, c *tls.Conn, s string) error {
+	type Args struct{ S string }
+	type Reply string
+
+	srv := rpc2.NewServer()
+	srv.Handle("script", func(client *rpc2.Client, args *Args, reply *Reply) error {
+		var r Reply
+		client.Call("script", Args{s}, &r)
+		fmt.Println(r)
+
+		*reply = Reply(args.S)
+
+		return nil
+	})
+
+	l, err := tls.Listen("tcp", ":"+strconv.Itoa(p), t)
+	if err != nil {
+		return err
+	}
+	srv.Accept(l)
+
+	return nil
 }
 
 func main() {
@@ -32,6 +78,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Create a pool of trusted certs (in our case only our own).
+	cp := x509.NewCertPool()
+	f, err := ioutil.ReadFile("./certs/aasgier.pem")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	cp.AppendCertsFromPEM(f)
+
 	kp, err := tls.LoadX509KeyPair("./certs/aasgier.pem", "./certs/aasgier.key")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -39,8 +94,14 @@ func main() {
 	}
 	cert := tls.Config{
 		Certificates:       []tls.Certificate{kp},
+		ClientAuth:         tls.RequireAndVerifyClientCert,
+		ClientCAs:          cp,
 		InsecureSkipVerify: true,
 	}
+
+	now := time.Now()
+	cert.Time = func() time.Time { return now }
+	cert.Rand = rand.Reader
 
 	// Check if TCP is running on the other RPi, set as primary accordingly.
 	var primary bool
@@ -51,72 +112,16 @@ func main() {
 
 	if primary {
 		// We actually did this before, but oh well...
-		fmt.Println("[primary] Launching TCP dialer...\n")
-
-		for {
-			fmt.Println("\n[primary] Running script on primary...")
-			fmt.Fprintf(conn, "~[secondary] Executing script on primary...\n")
-
-			cmd := exec.Command(conf.Script)
-			if err := cmd.Run(); err != nil {
-				fmt.Fprintln(os.Stderr, "[primary] Tried to execute script but failed!")
-				fmt.Fprintf(conn, "[secondary] Tried to execute script but failed!\n")
-				fmt.Fprintln(os.Stderr, "[primary] Changing secondary into primary!\n")
-				fmt.Fprintf(conn, "[secondary] Changing secondary into primary!~\n")
-				// TODO
-			}
-
-			fmt.Println("[primary] Script executed on primary without any problems.")
-			fmt.Fprintf(conn, "[secondary] Script executed without any problems.\n")
-
-			time.Sleep(conf.Interval * time.Second)
+		fmt.Println("[primary] Launching RPC client...\n")
+		if err := client(conf.Interval, conn, conf.Script); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
 	} else {
-		fmt.Println("[secondary] Launching TCP listener...\n")
-
-		// Create a pool of trusted certs (in our case only our own).
-		certPool := x509.NewCertPool()
-		pem, err := ioutil.ReadFile("./certs/aasgier.pem")
-		if err != nil {
+		fmt.Println("[secondary] Launching RPC server...\n")
+		if err := server(conf.Port, &cert, conn, conf.Script); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
-		}
-		certPool.AppendCertsFromPEM(pem)
-
-		kp, err := tls.LoadX509KeyPair("./certs/aasgier.pem", "./certs/aasgier.key")
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		cert := tls.Config{
-			Certificates: []tls.Certificate{kp},
-			ClientAuth:   tls.RequireAndVerifyClientCert,
-			ClientCAs:    certPool,
-		}
-
-		now := time.Now()
-		cert.Time = func() time.Time { return now }
-		cert.Rand = rand.Reader
-
-		ln, err := tls.Listen("tcp", ":"+strconv.Itoa(conf.Port), &cert)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		conn, err := ln.Accept()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-
-		for {
-			msg, err := bufio.NewReader(conn).ReadString('\n')
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
-
-			fmt.Print(strings.Replace(msg, "~", "\n", -1))
 		}
 	}
 }
