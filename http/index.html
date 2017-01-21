@@ -3,13 +3,22 @@
 <head>
 	<title>aasgier</title>
 	<meta charset="utf-8">
-	<link rel="stylesheet" href="./style.css"/>
+
+	<script src="assets/js/Chart.bundle.min.js"></script>
+
+	<link rel="stylesheet" href="assets/style.css"/>
+	<script src="assets/script.js"></script>
 </head>
 
 <body>
 	<div id="current">
-		Water level: {{.WaterLevel}}
+		WATER LEVEL: <span id=waterLevel>?<span>
 		</br>
-		Vibrate: {{.Vibrate}}
+		<hr>
+		VIBRATE: <span id=vibrate>?<span>
+	</div>
+
+	<div>
+		<canvas id="canvas"></canvas>
 	</div>
 </body>

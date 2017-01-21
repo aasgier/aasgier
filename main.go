@@ -2,12 +2,16 @@ package main
 
 import (
 	"bytes"
-	"html/template"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"strconv"
 	"time"
+
+	"golang.org/x/net/websocket"
 
 	"github.com/BurntSushi/toml"
 	"github.com/braintree/manners"
@@ -26,6 +30,50 @@ type config struct {
 type script struct {
 	Vibrate    bool
 	WaterLevel int
+}
+
+var waterLevelList []int
+
+type message struct {
+	Message []int `json:"message"`
+}
+
+func root(w http.ResponseWriter, r *http.Request) {
+	f, err := ioutil.ReadFile("./http/index.html")
+	if err != nil {
+		log.Println(err)
+	}
+
+	fmt.Fprintf(w, "%s", f)
+}
+
+func socket(ws *websocket.Conn) {
+	var conf config
+
+	// TODO: I don't really want to decode the config file
+	// every time, can't I somehow send this as an argument?
+	_, err := toml.DecodeFile("./config.toml", &conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		var m message
+
+		// Send the waterLevelList to websocket
+		if err := websocket.JSON.Send(ws, message{waterLevelList}); err != nil {
+			log.Println(err)
+			break
+		}
+
+		// Receive messages.
+		if err := websocket.JSON.Receive(ws, &m); err != nil {
+			log.Println(err)
+			break
+		}
+
+		time.Sleep(conf.Interval * time.Second / 2)
+	}
 }
 
 func main() {
@@ -77,24 +125,23 @@ start:
 	log.Println("starting new http server on port " + strconv.Itoa(conf.Port))
 	mux := http.NewServeMux()
 
-	// Load HTML template.
-	t, err := template.New("").ParseFiles("./http/index.html")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Set location of our assets and websocket stuff.
+	mux.Handle("/socket", websocket.Handler(socket))
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./http/assets"))))
 
 	// Read stuff into template, or something.
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if err := t.ExecuteTemplate(w, "index.html", &scr); err != nil {
-			log.Fatal(err)
-		}
-	})
+	mux.HandleFunc("/", root)
 
 	// Start the server.
 	go manners.ListenAndServe(":"+strconv.Itoa(conf.Port), mux)
 
 	e = 0
 	for {
+		f, err := os.Create("/tmp/WaterLevelList")
+		if err != nil {
+			log.Println(err)
+		}
+
 		// Just to be sure we check if the (should be) secondary http
 		// server isn't actually running, if this is the case something went
 		// wrong. We don't want two concurrent http servers, because that
@@ -111,6 +158,7 @@ start:
 		if err == nil {
 			log.Println("secondary is executing the scripts as well, ceasing to be primary")
 			manners.Close()
+			f.Close()
 
 			// Become secondary (hopefully).
 			goto start
@@ -131,6 +179,7 @@ start:
 			if e > 6 {
 				log.Println("script failed too many times, ceasing to be primary")
 				manners.Close()
+				f.Close()
 
 				// Become secondary (hopefully).
 				time.Sleep(4 * time.Second * 2)
@@ -145,6 +194,8 @@ start:
 		if _, err := toml.Decode(b.String(), &scr); err != nil {
 			log.Println(err)
 		}
+		// TODO: Add max length to waterLevelList.
+		waterLevelList = append(waterLevelList, scr.WaterLevel)
 
 		time.Sleep(conf.Interval * time.Second)
 	}
