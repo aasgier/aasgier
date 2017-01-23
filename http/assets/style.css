@@ -6,6 +6,11 @@
 	padding: 0px;
 }
 
+body {
+	margin: 32px;
+	margin-top: calc(32px + 32px);
+}
+
 hr {
 	border: none;
 	border-top: 1px solid #F3F4F6;
@@ -59,6 +64,11 @@ hr {
 #vibrate {
 	background: #36A2EB;
 	padding-right: 38px !important;
+}
+
+#info a {
+	border-bottom: 1px solid #36A2EB;;
+	color: #36A2EB;
 }
 
 #graph {

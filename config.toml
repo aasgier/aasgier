@@ -2,7 +2,7 @@
 IP = "punpun.xyz:8080"
 
 # Set port to listen to when primary.
-port = 9557
+port = 8080
 
 # Set interval in seconds at which to the execute script
 # and update the graph.

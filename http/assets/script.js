@@ -1,4 +1,4 @@
-var waterLevel = {
+var lines = {
 	labels: [],
 	datasets: [{
 		type: "line",
@@ -15,11 +15,12 @@ var waterLevel = {
 window.onload = function() {
 	var ctx = document.getElementById("canvas").getContext("2d");
 
-	Chart.defaults.global.defaultFontColor = "rgba(21, 22, 23, 1)";
+	Chart.defaults.global.defaultFontColor = "rgba(53, 55, 58, 1)";
+	Chart.defaults.global.defaultFontFamily = "'proxima-nova-soft', 'sans-serif'";
 
 	window.graph = new Chart(ctx, {
 		type: "line",
-		data: waterLevel,
+		data: lines,
 		options: {
 			responsive: true,
 			legend: {
@@ -107,7 +108,6 @@ ws.onmessage = function(event) {
 	// TODO: Do we really need to do this every message?
 	document.getElementsByClassName("hostname")[0].textContent = m.hostname;
 
-
 	// Update uptime text.
 	uptime = timeSince(new Date(m.uptime))
 	if (oldUptime != uptime) {
@@ -119,13 +119,11 @@ ws.onmessage = function(event) {
 	// Update graph.
 	var labels = [];
 	for (var i = 0; i != l; i++) labels.push("")
-	waterLevel.labels = labels
-	waterLevel.datasets.forEach(function(dataset) {
-		dataset.data = m.waterLevelList;
-	})
+	lines.labels = labels
+	lines.datasets[0].data = m.waterLevelList;
 	window.graph.update();
 
 	// Send a message to the server (that way the server can see if
-	// it needs to keep the connection open.
+	// it needs to keep the connection open).
 	ws.send(JSON.stringify({vibrate: true}))
 }

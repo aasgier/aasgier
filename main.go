@@ -19,7 +19,7 @@ import (
 
 // This struct contains the config keys, check config.toml for a short
 // description of what each key does.
-type config struct {
+var config struct {
 	IP       string
 	Port     int
 	Interval time.Duration
@@ -28,22 +28,26 @@ type config struct {
 }
 
 // This struct contains the keys the script (should) print.
-type script struct {
+var script struct {
 	Vibrate    bool
 	WaterLevel int
 }
 
-var conf config
-var scr script
-var waterLevelList []int
-var initTime = time.Now().Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")
-
+// This struct contains everything that should be send over a websocket.
 type message struct {
 	Hostname       string `json:"hostname"`
 	Uptime         string `json:"uptime"`
 	Vibrate        bool   `json:"vibrate"`
 	WaterLevelList []int  `json:"waterLevelList"`
 }
+
+// Make waterLevelList global, this gets filled by the loop that
+// also runs the script.
+var waterLevelList []int
+
+// Initialize initTime and hostname, both needed by the websocket.
+var initTime = time.Now().Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")
+var hostname, _ = os.Hostname()
 
 func root(w http.ResponseWriter, r *http.Request) {
 	f, err := ioutil.ReadFile("./http/index.html")
@@ -55,14 +59,9 @@ func root(w http.ResponseWriter, r *http.Request) {
 }
 
 func socket(ws *websocket.Conn) {
-	hn, err := os.Hostname()
-	if err != nil {
-		log.Println(err)
-	}
-
 	for {
 		// Send the waterLevelList to websocket
-		if err := websocket.JSON.Send(ws, message{hn, initTime, scr.Vibrate, waterLevelList}); err != nil {
+		if err := websocket.JSON.Send(ws, message{hostname, initTime, script.Vibrate, waterLevelList}); err != nil {
 			log.Println(err)
 			break
 		}
@@ -76,14 +75,13 @@ func socket(ws *websocket.Conn) {
 
 		// TODO: Use some kind of even here to continue the loop.
 		// If I fix this I can remove a lot of "useless" code in script.js as well.
-		time.Sleep(conf.Interval * time.Second / 2)
+		time.Sleep(config.Interval * time.Second / 2)
 	}
 }
 
 func init() {
 	log.Println("decoding config file")
-	_, err := toml.DecodeFile("./config.toml", &conf)
-	if err != nil {
+	if _, err := toml.DecodeFile("./config.toml", &config); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -100,19 +98,19 @@ start:
 	// stay in this loop until the primary somehow goes down. If after 6 failed
 	// GETs the primary is still not up, the secondary will take over the role
 	// of primary.
-	log.Println("checking http://" + conf.IP + " status")
+	log.Println("checking http://" + config.IP + " status")
 	var e int
 	var primary bool
 	for !primary {
 		// GET IP as specified in the config and check it for errors.
 
-		if _, err := http.Get("http://" + conf.IP); err != nil {
+		if _, err := http.Get("http://" + config.IP); err != nil {
 			log.Println(err)
 
 			// We'll take over the role of primary after 6 failes GETs.
 			e++
 			if e > 6 || init {
-				log.Println("http://" + conf.IP + " is down, we are now primary")
+				log.Println("http://" + config.IP + " is down, we are now primary")
 
 				primary = true
 				break
@@ -120,14 +118,14 @@ start:
 		} else {
 			// Reset error count to 0 if the other RPi is working properly.
 			e = 0
-			log.Println("http://" + conf.IP + " is working properly, we are secondary")
+			log.Println("http://" + config.IP + " is working properly, we are secondary")
 		}
 
 		time.Sleep(4 * time.Second)
 	}
 	init = false
 
-	log.Println("starting new http server on port " + strconv.Itoa(conf.Port))
+	log.Println("starting new http server on port " + strconv.Itoa(config.Port))
 	mux := http.NewServeMux()
 
 	// Set location of our assets and websocket stuff.
@@ -138,7 +136,7 @@ start:
 	mux.HandleFunc("/", root)
 
 	// Start the server.
-	go manners.ListenAndServe(":"+strconv.Itoa(conf.Port), mux)
+	go manners.ListenAndServe(":"+strconv.Itoa(config.Port), mux)
 
 	e = 0
 	for {
@@ -151,10 +149,10 @@ start:
 		// Doing that means we could easily run into nasty problems such as the
 		// barrier getting conflicting commands to close *and* to open at the same
 		// time. We could easily fix this by making two separate functions, one for
-		// "close barrier" and one for "open barrier", but hey. Doing that would
-		// also make this entire script and part of the SNE part of our project
-		// useless :^).
-		if _, err := http.Get("http://" + conf.IP); err == nil {
+		// "close barrier" and one for "open barrier". But hey, Doing that would
+		// also make this entire script (well the non website related stuff anyways)
+		// and pretty much the SNE part of our project useless :^).
+		if _, err := http.Get("http://" + config.IP); err == nil {
 			log.Println("secondary is executing the scripts as well, ceasing to be primary")
 			manners.Close()
 
@@ -163,8 +161,8 @@ start:
 		}
 
 		// Execute script and check if everything went well.
-		log.Println("executing " + conf.Script)
-		cmd := exec.Command(conf.Script)
+		log.Println("executing " + config.Script)
+		cmd := exec.Command(config.Script)
 		var b bytes.Buffer
 		cmd.Stdout = &b
 		if err := cmd.Run(); err != nil {
@@ -188,14 +186,14 @@ start:
 		}
 
 		// Parse script output.
-		if _, err := toml.Decode(b.String(), &scr); err != nil {
+		if _, err := toml.Decode(b.String(), &script); err != nil {
 			log.Println(err)
 		}
-		waterLevelList = append(waterLevelList, scr.WaterLevel)
-		if len(waterLevelList) >= conf.History+1 {
-			waterLevelList = waterLevelList[1 : conf.History+1]
+		waterLevelList = append(waterLevelList, script.WaterLevel)
+		if len(waterLevelList) >= config.History+1 {
+			waterLevelList = waterLevelList[1 : config.History+1]
 		}
 
-		time.Sleep(conf.Interval * time.Second)
+		time.Sleep(config.Interval * time.Second)
 	}
 }
