@@ -1,42 +1,66 @@
-@font-face {
-	font-family: 'proxima-nova';
-	src: url('./assets/fonts/Mark Simonson - Proxima Nova Alt Bold-webfont.eot');
-	src: url('./assets/fonts/Mark Simonson - Proxima Nova Alt Bold-webfont.eot?#iefix') format('embedded-opentype'),
-		 url('./assets/fonts/Mark Simonson - Proxima Nova Alt Bold-webfont.woff') format('woff'),
-		 url('./assets/fonts/Mark Simonson - Proxima Nova Alt Bold-webfont.ttf') format('truetype'),
-		 url('./assets/fonts/Mark Simonson - Proxima Nova Alt Bold-webfont.svg#proxima_nova_altbold') format('svg');
-	font-weight: bold;
-	font-style: bold;
-}
-
 * {
+	box-sizing: border-box;
 	outline: 0px;
-	text-decoration: none; 
+	text-decoration: none;
+	margin: 0px;
+	padding: 0px;
 }
 
 hr {
 	border: none;
-	height: 1px;
-	background: #F3F4F6;
+	border-top: 1px solid #E7E9ED;
+	height: 0px;
+	margin-top: 22px;
+	margin-bottom: 22px;
+}
+
+#side {
+	color: #FFFFFF;
+	display: inline-block;
+	float: left;
+	font-family: "proxima-nova-soft", sans-serif;
+	font-weight: 600;
+	text-align: center;
+}
+
+#current, #info, #graph {
+	border: 1px solid #F3F4F6;
+	border-radius: 2px;
+	margin: 32px;
+	padding: 32px;
+	box-shadow: 0px 1px 66px -37px rgba(54, 163, 235, 0.2);
 }
 
 #current {
-	background: #FFFFFF;
-	border: 1px solid #F3F4F6;
-	border-radius: 1px;
-	color: #142D33;
-	font-family: 'proxima-nova', sans-serif;
-	font-size: 32px;
-	position: fixed;
-	top: 40px;
-	left: 40px;
-	padding: 40px;
-	line-height: 70px;
+	margin-top: 0px;
 }
 
-#canvas {
-	position: abolsute;
-	padding: 200px;
-	margin-top: -100px;
-	max-width: calc(100% - 400px);
+#info {
+	color: #35373A;
+	text-align: left;
+}
+
+#side p {
+	border-radius: 8px;
+	padding: 16px;
+	width: 180px;
+}
+
+#side span {
+	position: absolute;
+}
+
+#waterLevel {
+	background: #FF6384;
+	padding-right: 32px !important;
+}
+
+/* TODO: Center with false as well */
+#vibrate {
+	background: #36A2EB;
+	padding-right: 38px !important;
+}
+
+#graph {
+	overflow: hidden;
 }

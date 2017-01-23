@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
 	"strconv"
 	"time"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/braintree/manners"
+	myip "github.com/polds/MyIP"
 )
 
 // This struct contains the config keys, check config.toml for a short
@@ -23,19 +23,24 @@ type config struct {
 	IP       string
 	Port     int
 	Interval time.Duration
+	History  int
 	Script   string
 }
 
-// This struct contains the values the script (should) print.
+// This struct contains the keys the script (should) print.
 type script struct {
 	Vibrate    bool
 	WaterLevel int
 }
 
+var conf config
+var scr script
 var waterLevelList []int
 
 type message struct {
-	Message []int `json:"message"`
+	IP             string `json:"ip"`
+	Vibrate        bool   `json:"vibrate"`
+	WaterLevelList []int  `json:"waterLevelList"`
 }
 
 func root(w http.ResponseWriter, r *http.Request) {
@@ -48,44 +53,41 @@ func root(w http.ResponseWriter, r *http.Request) {
 }
 
 func socket(ws *websocket.Conn) {
-	var conf config
-
-	// TODO: I don't really want to decode the config file
-	// every time, can't I somehow send this as an argument?
-	_, err := toml.DecodeFile("./config.toml", &conf)
+	ip, err := myip.GetMyIP()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	for {
-		var m message
-
 		// Send the waterLevelList to websocket
-		if err := websocket.JSON.Send(ws, message{waterLevelList}); err != nil {
+		if err := websocket.JSON.Send(ws, message{ip, scr.Vibrate, waterLevelList}); err != nil {
 			log.Println(err)
 			break
 		}
 
 		// Receive messages.
+		var m message
 		if err := websocket.JSON.Receive(ws, &m); err != nil {
 			log.Println(err)
 			break
 		}
 
+		// TODO: Use some kind of even here to continue the loop.
 		time.Sleep(conf.Interval * time.Second / 2)
 	}
 }
 
-func main() {
-	var conf config
-	var scr script
-
+func init() {
 	log.Println("decoding config file")
 	_, err := toml.DecodeFile("./config.toml", &conf)
 	if err != nil {
 		log.Fatal(err)
 	}
+}
 
+func main() {
+	// If this is true (which it can only be on first run) we will
+	// skip waiting for 6 failed GETs..
 	init := true
 
 start:
@@ -100,8 +102,8 @@ start:
 	var primary bool
 	for !primary {
 		// GET IP as specified in the config and check it for errors.
-		_, err = http.Get("http://" + conf.IP)
-		if err != nil {
+
+		if _, err := http.Get("http://" + conf.IP); err != nil {
 			log.Println(err)
 
 			// We'll take over the role of primary after 6 failes GETs.
@@ -137,11 +139,6 @@ start:
 
 	e = 0
 	for {
-		f, err := os.Create("/tmp/WaterLevelList")
-		if err != nil {
-			log.Println(err)
-		}
-
 		// Just to be sure we check if the (should be) secondary http
 		// server isn't actually running, if this is the case something went
 		// wrong. We don't want two concurrent http servers, because that
@@ -154,11 +151,9 @@ start:
 		// "close barrier" and one for "open barrier", but hey. Doing that would
 		// also make this entire script and part of the SNE part of our project
 		// useless :^).
-		_, err = http.Get("http://" + conf.IP)
-		if err == nil {
+		if _, err := http.Get("http://" + conf.IP); err == nil {
 			log.Println("secondary is executing the scripts as well, ceasing to be primary")
 			manners.Close()
-			f.Close()
 
 			// Become secondary (hopefully).
 			goto start
@@ -179,7 +174,6 @@ start:
 			if e > 6 {
 				log.Println("script failed too many times, ceasing to be primary")
 				manners.Close()
-				f.Close()
 
 				// Become secondary (hopefully).
 				time.Sleep(4 * time.Second * 2)
@@ -194,8 +188,10 @@ start:
 		if _, err := toml.Decode(b.String(), &scr); err != nil {
 			log.Println(err)
 		}
-		// TODO: Add max length to waterLevelList.
 		waterLevelList = append(waterLevelList, scr.WaterLevel)
+		if len(waterLevelList) >= conf.History+1 {
+			waterLevelList = waterLevelList[1 : conf.History+1]
+		}
 
 		time.Sleep(conf.Interval * time.Second)
 	}

@@ -1,24 +1,44 @@
 <!DOCTYPE html>
 
 <head>
-	<title>aasgier</title>
+	<title>Aasgier</title>
 	<meta charset="utf-8">
 
 	<script src="assets/js/Chart.bundle.min.js"></script>
+	<script src="assets/js/jquery-3.1.1.min.js"></script>
+	<script src="assets/js/jquery-ui.min.js"></script>
 
 	<link rel="stylesheet" href="assets/style.css"/>
 	<script src="assets/script.js"></script>
+
+	<style type="text/css">
+		@font-face {
+			font-family: 'proxima-nova-soft';
+			src: url('assets/fonts/proxima-nova-soft-normal-webfont.eot');
+			src: url('assets/fonts/proxima-nova-soft-normal-webfont.eot?#iefix') format('embedded-opentype'),
+				 url('assets/fonts/proxima-nova-soft-normal-webfont.woff') format('woff'),
+				 url('assets/fonts/proxima-nova-soft-normal-webfont.ttf') format('truetype'),
+				 url('assets/fonts/proxima-nova-soft-normal-webfont.svg#proxima_nova_altbold') format('svg');
+		}
+	</style>
 </head>
 
 <body>
-	<div id="current">
-		WATER LEVEL: <span id=waterLevel>?<span>
-		</br>
-		<hr>
-		VIBRATE: <span id=vibrate>?<span>
+	<div id="side">
+		<div id="current">
+			<p id="waterLevel">Water level:&nbsp<span class="waterLevel">?<span></p>
+			<hr>
+			<p id="vibrate">Vibrate:&nbsp<span class="vibrate">?<span></p>
+		</div>
+		<div id="info">
+			<p>Runnin on:&nbsp<span class="ip">?<span></p>
+			<p>Uptime:&nbsp<span class="uptime">?<span></p>
+			<p>Min water level:&nbsp<span class="vibrate">?<span></p>
+			<p>Max water level:&nbsp<span class="vibrate">?<span></p>
+		</div>
 	</div>
 
-	<div>
+	<div id="graph">
 		<canvas id="canvas"></canvas>
 	</div>
 </body>
