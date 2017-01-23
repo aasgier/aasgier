@@ -8,7 +8,7 @@
 
 hr {
 	border: none;
-	border-top: 1px solid #E7E9ED;
+	border-top: 1px solid #F3F4F6;
 	height: 0px;
 	margin-top: 22px;
 	margin-bottom: 22px;
@@ -24,11 +24,11 @@ hr {
 }
 
 #current, #info, #graph {
-	border: 1px solid #F3F4F6;
+	border: 1px solid #F0F1F2;
 	border-radius: 2px;
 	margin: 32px;
 	padding: 32px;
-	box-shadow: 0px 1px 66px -37px rgba(54, 163, 235, 0.2);
+	box-shadow: 0px 1px 66px -37px rgba(54, 163, 235, 0.3);
 }
 
 #current {

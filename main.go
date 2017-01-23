@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"strconv"
 	"time"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/braintree/manners"
-	myip "github.com/polds/MyIP"
 )
 
 // This struct contains the config keys, check config.toml for a short
@@ -36,9 +36,11 @@ type script struct {
 var conf config
 var scr script
 var waterLevelList []int
+var initTime = time.Now().Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")
 
 type message struct {
-	IP             string `json:"ip"`
+	Hostname       string `json:"hostname"`
+	Uptime         string `json:"uptime"`
 	Vibrate        bool   `json:"vibrate"`
 	WaterLevelList []int  `json:"waterLevelList"`
 }
@@ -53,14 +55,14 @@ func root(w http.ResponseWriter, r *http.Request) {
 }
 
 func socket(ws *websocket.Conn) {
-	ip, err := myip.GetMyIP()
+	hn, err := os.Hostname()
 	if err != nil {
 		log.Println(err)
 	}
 
 	for {
 		// Send the waterLevelList to websocket
-		if err := websocket.JSON.Send(ws, message{ip, scr.Vibrate, waterLevelList}); err != nil {
+		if err := websocket.JSON.Send(ws, message{hn, initTime, scr.Vibrate, waterLevelList}); err != nil {
 			log.Println(err)
 			break
 		}
@@ -73,6 +75,7 @@ func socket(ws *websocket.Conn) {
 		}
 
 		// TODO: Use some kind of even here to continue the loop.
+		// If I fix this I can remove a lot of "useless" code in script.js as well.
 		time.Sleep(conf.Interval * time.Second / 2)
 	}
 }

@@ -15,6 +15,8 @@ var waterLevel = {
 window.onload = function() {
 	var ctx = document.getElementById("canvas").getContext("2d");
 
+	Chart.defaults.global.defaultFontColor = "rgba(21, 22, 23, 1)";
+
 	window.graph = new Chart(ctx, {
 		type: "line",
 		data: waterLevel,
@@ -54,9 +56,35 @@ window.onload = function() {
 	});
 };
 
+function timeSince(date) {
+	var seconds = Math.floor((new Date() - date) / 1000);
+	var interval = Math.floor(seconds / 31536000);
+	if (interval > 1) {
+		return interval + " years";
+	}
+	interval = Math.floor(seconds / 2592000);
+	if (interval > 1) {
+		return interval + " months";
+	}
+	interval = Math.floor(seconds / 86400);
+	if (interval > 1) {
+		return interval + " days";
+	}
+	interval = Math.floor(seconds / 3600);
+	if (interval > 1) {
+		return interval + " hours";
+	}
+	interval = Math.floor(seconds / 60);
+	if (interval > 1 || interval == 0) {
+		return interval + " minutes";
+	}
+	return interval + " minute";
+}
+
 var ws = new WebSocket("ws://" + window.location.host + "/socket");
 var oldWaterLevelList = new(Array)
 var oldVibrate = new(Boolean)
+var oldUptime = new(String)
 ws.onmessage = function(event) {
 	var m = JSON.parse(event.data);
 
@@ -69,7 +97,6 @@ ws.onmessage = function(event) {
 	oldWaterLevelList = m.waterLevelList[l-1];
 
 	// Update vibrate text.
-	console.debug(oldVibrate)
 	if (oldVibrate != m.vibrate) {
 		document.getElementsByClassName("vibrate")[0].textContent = m.vibrate;
 		$(".vibrate").effect("bounce")
@@ -77,15 +104,18 @@ ws.onmessage = function(event) {
 	oldVibrate = m.vibrate;
 
 	// Update running on text.
-	document.getElementsByClassName("ip")[0].textContent = m.ip.substring(0, 7)+"...";
+	// TODO: Do we really need to do this every message?
+	document.getElementsByClassName("hostname")[0].textContent = m.hostname;
 
-	// Update vibrate text.
-	console.debug(oldVibrate)
-	if (oldVibrate != m.vibrate) {
-		document.getElementsByClassName("vibrate")[0].textContent = m.vibrate;
-		$(".vibrate").effect("bounce")
+
+	// Update uptime text.
+	uptime = timeSince(new Date(m.uptime))
+	if (oldUptime != uptime) {
+		document.getElementsByClassName("uptime")[0].textContent = uptime;
+		$(".uptime").effect("bounce")
 	}
-	oldVibrate = m.vibrate;
+	oldUptime = uptime;
+
 	// Update graph.
 	var labels = [];
 	for (var i = 0; i != l; i++) labels.push("")

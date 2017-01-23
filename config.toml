@@ -2,14 +2,14 @@
 IP = "punpun.xyz:8080"
 
 # Set port to listen to when primary.
-port = 8080
+port = 9557
 
 # Set interval in seconds at which to the execute script
 # and update the graph.
 interval = 2
 
 # Set maximum the amount of X-tics the graph can show.
-history = 32
+history = 22
 
 # Set path to script to run.
 script = "./script/aasgier.sh"
