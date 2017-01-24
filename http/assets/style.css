@@ -11,6 +11,15 @@ body {
 	margin-top: calc(32px + 32px);
 }
 
+::selection {
+	color: #FFFFFF;
+	background: #FF6384;
+}
+::-moz-selection {
+	color: #FFFFFF;
+	background: #FF6384;
+}
+
 hr {
 	border: none;
 	border-top: 1px solid #F3F4F6;

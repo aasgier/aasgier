@@ -85,16 +85,14 @@ func socket(ws *websocket.Conn) {
 	}
 }
 
-func init() {
+func main() {
 	log.Println("decoding config file")
 	if _, err := toml.DecodeFile("./config.toml", &config); err != nil {
 		log.Fatal(err)
 	}
-}
 
-func main() {
 	// If this is true (which it can only be on first run) we will
-	// skip waiting for 6 failed GETs..
+	// skip waiting for 6 failed GETs.
 	init := true
 
 start:
@@ -161,7 +159,10 @@ start:
 		// and pretty much the SNE part of our project useless :^).
 		if _, err := http.Get("http://" + config.IP); err == nil {
 			log.Println("secondary is executing the scripts as well, ceasing to be primary")
-			ctx, _ := context.WithTimeout(context.Background(), 4*time.Second)
+			ctx, err := context.WithTimeout(context.Background(), 4*time.Second)
+			if err != nil {
+				log.Println(err)
+			}
 			srv.Shutdown(ctx)
 
 			// Become secondary (hopefully).
@@ -182,7 +183,10 @@ start:
 			e++
 			if e > 6 {
 				log.Println("script failed too many times, ceasing to be primary")
-				ctx, _ := context.WithTimeout(context.Background(), 4*time.Second)
+				ctx, err := context.WithTimeout(context.Background(), 4*time.Second)
+				if err != nil {
+					log.Println(err)
+				}
 				srv.Shutdown(ctx)
 
 				// Become secondary (hopefully).

@@ -23,10 +23,10 @@ edit `config.toml` to make it point to the right IP address and such.
 ## Authors
 
 * Camille Scholtz ([onodera-punpun](https://github.com/onodera-punpun))
-* TODO
-* TODO
-* TODO
-* TODO
+* Eelke Feitz
+* Fabiënne Oskam
+* Joost van Bussum
+* Ismael Hassan
 
 
 ## Notes

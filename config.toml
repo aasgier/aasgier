@@ -13,4 +13,4 @@ history = 22
 
 # Set path to script to execute.
 # TODO: Replace this with actual python script...
-script = "./script/aasgier.sh"
+script = "./script/aasgier.py"

@@ -96,7 +96,7 @@ ws.onmessage = function(event) {
 		$(".waterLevel").effect("bounce");
 	}
 	oldWaterLevelList = m.waterLevelList[l];
-	
+
 	// Update vibrate text.
 	if (oldVibrate != m.vibrate) {
 		document.getElementsByClassName("vibrate")[0].textContent = m.vibrate;
