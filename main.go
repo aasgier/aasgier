@@ -64,14 +64,14 @@ func socket(ws *websocket.Conn) {
 	for {
 		// Send the waterLevelList to websocket
 		if err := websocket.JSON.Send(ws, message{hostname, initTime, script.Vibrate, waterLevelList}); err != nil {
-			log.Println(err)
+			log.Printf("closing socket: %s", err)
 			break
 		}
 
 		// Receive messages.
 		var m message
 		if err := websocket.JSON.Receive(ws, &m); err != nil {
-			log.Println(err)
+			log.Printf("closing socket: %s", err)
 			break
 		}
 
@@ -102,7 +102,7 @@ start:
 	// stay in this loop until the primary somehow goes down. If after 6 failed
 	// GETs the primary is still not up, the secondary will take over the role
 	// of primary.
-	log.Println("checking http://" + config.IP + " status")
+	log.Printf("checking http://%s status", config.IP)
 	var e int
 	var primary bool
 	for !primary {
@@ -114,7 +114,7 @@ start:
 			// We'll take over the role of primary after 6 failes GETs.
 			e++
 			if e > 6 || init {
-				log.Println("http://" + config.IP + " is down, we are now primary")
+				log.Printf("http://%s is down, we are now primary", config.IP)
 
 				primary = true
 				break
@@ -122,14 +122,14 @@ start:
 		} else {
 			// Reset error count to 0 if the other RPi is working properly.
 			e = 0
-			log.Println("http://" + config.IP + " is working properly, we are secondary")
+			log.Printf("http://%s is working properly, we are secondary", config.IP)
 		}
 
 		time.Sleep(4 * time.Second)
 	}
 	init = false
 
-	log.Println("starting new http server on port " + strconv.Itoa(config.Port))
+	log.Printf("starting new http server on port %d", config.Port)
 	mux := http.NewServeMux()
 
 	// Set location of our assets and websocket stuff.
@@ -161,7 +161,7 @@ start:
 			log.Println("secondary is executing the scripts as well, ceasing to be primary")
 			ctx, err := context.WithTimeout(context.Background(), 4*time.Second)
 			if err != nil {
-				log.Println(err)
+				log.Fatal(err)
 			}
 			srv.Shutdown(ctx)
 
@@ -170,7 +170,7 @@ start:
 		}
 
 		// Execute script and check if everything went well.
-		log.Println("executing " + config.Script)
+		log.Printf("executing %s", config.Script)
 		cmd := exec.Command(config.Script)
 		var b bytes.Buffer
 		cmd.Stdout = &b
@@ -185,7 +185,7 @@ start:
 				log.Println("script failed too many times, ceasing to be primary")
 				ctx, err := context.WithTimeout(context.Background(), 4*time.Second)
 				if err != nil {
-					log.Println(err)
+					log.Fatal(err)
 				}
 				srv.Shutdown(ctx)
 

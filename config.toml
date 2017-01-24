@@ -1,8 +1,8 @@
 # Set IP and port of other system.
-IP = "punpun.xyz:8080"
+IP = "punpun.xyz:1337"
 
 # Set port to launch http server on when primary.
-port = 8080
+port = 1337
 
 # Set interval in seconds at which to the execute script
 # and update the graph.
@@ -12,5 +12,4 @@ interval = 2
 history = 22
 
 # Set path to script to execute.
-# TODO: Replace this with actual python script...
 script = "./script/aasgier.py"
