@@ -1,7 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/aasgier/aasgier)](https://goreportcard.com/report/github.com/aasgier/aasgier)
 
-## Description
-
 TODO
 
 
@@ -31,6 +29,6 @@ edit `config.toml` to make it point to the right IP address and such.
 * TODO
 
 
-# Notes
+## Notes
 
 Probably runs on every OS, but only tested on GNU/Linux.

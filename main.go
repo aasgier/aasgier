@@ -2,19 +2,20 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"reflect"
 	"strconv"
 	"time"
 
 	"golang.org/x/net/websocket"
 
 	"github.com/BurntSushi/toml"
-	"github.com/braintree/manners"
 )
 
 // This struct contains the config keys, check config.toml for a short
@@ -59,6 +60,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 }
 
 func socket(ws *websocket.Conn) {
+	var o []int
 	for {
 		// Send the waterLevelList to websocket
 		if err := websocket.JSON.Send(ws, message{hostname, initTime, script.Vibrate, waterLevelList}); err != nil {
@@ -73,9 +75,13 @@ func socket(ws *websocket.Conn) {
 			break
 		}
 
-		// TODO: Use some kind of even here to continue the loop.
-		// If I fix this I can remove a lot of "useless" code in script.js as well.
-		time.Sleep(config.Interval * time.Second / 2)
+		// Wait till waterLevelList changes to continue.
+		i := true
+		for reflect.DeepEqual(waterLevelList, o) || i {
+			o = waterLevelList
+			i = false
+			time.Sleep(500 * time.Millisecond)
+		}
 	}
 }
 
@@ -136,7 +142,8 @@ start:
 	mux.HandleFunc("/", root)
 
 	// Start the server.
-	go manners.ListenAndServe(":"+strconv.Itoa(config.Port), mux)
+	srv := &http.Server{Addr: ":" + strconv.Itoa(config.Port), Handler: mux}
+	go srv.ListenAndServe()
 
 	e = 0
 	for {
@@ -154,7 +161,8 @@ start:
 		// and pretty much the SNE part of our project useless :^).
 		if _, err := http.Get("http://" + config.IP); err == nil {
 			log.Println("secondary is executing the scripts as well, ceasing to be primary")
-			manners.Close()
+			ctx, _ := context.WithTimeout(context.Background(), 4*time.Second)
+			srv.Shutdown(ctx)
 
 			// Become secondary (hopefully).
 			goto start
@@ -174,7 +182,8 @@ start:
 			e++
 			if e > 6 {
 				log.Println("script failed too many times, ceasing to be primary")
-				manners.Close()
+				ctx, _ := context.WithTimeout(context.Background(), 4*time.Second)
+				srv.Shutdown(ctx)
 
 				// Become secondary (hopefully).
 				time.Sleep(4 * time.Second * 2)

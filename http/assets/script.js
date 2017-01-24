@@ -90,40 +90,39 @@ ws.onmessage = function(event) {
 	var m = JSON.parse(event.data);
 
 	// Update water level text.
-	l = m.waterLevelList.length
-	if (oldWaterLevelList != m.waterLevelList[l-1]) {
-		document.getElementsByClassName("waterLevel")[0].textContent = m.waterLevelList[l-1];
-		$(".waterLevel").effect("bounce")
+	var l = m.waterLevelList.length-1;
+	if (oldWaterLevelList != m.waterLevelList[l]) {
+		document.getElementsByClassName("waterLevel")[0].textContent = m.waterLevelList[l];
+		$(".waterLevel").effect("bounce");
 	}
-	oldWaterLevelList = m.waterLevelList[l-1];
-
+	oldWaterLevelList = m.waterLevelList[l];
+	
 	// Update vibrate text.
 	if (oldVibrate != m.vibrate) {
 		document.getElementsByClassName("vibrate")[0].textContent = m.vibrate;
-		$(".vibrate").effect("bounce")
+		$(".vibrate").effect("bounce");
 	}
 	oldVibrate = m.vibrate;
 
-	// Update running on text.
-	// TODO: Do we really need to do this every message?
+	// Update hostname text.
 	document.getElementsByClassName("hostname")[0].textContent = m.hostname;
 
 	// Update uptime text.
-	uptime = timeSince(new Date(m.uptime))
+	var uptime = timeSince(new Date(m.uptime));
 	if (oldUptime != uptime) {
 		document.getElementsByClassName("uptime")[0].textContent = uptime;
-		$(".uptime").effect("bounce")
+		$(".uptime").effect("bounce");
 	}
 	oldUptime = uptime;
 
 	// Update graph.
 	var labels = [];
-	for (var i = 0; i != l; i++) labels.push("")
-	lines.labels = labels
+	for (var i = 0; i != l+1; i++) labels.push("");
+	lines.labels = labels;
 	lines.datasets[0].data = m.waterLevelList;
 	window.graph.update();
 
 	// Send a message to the server (that way the server can see if
 	// it needs to keep the connection open).
-	ws.send(JSON.stringify({vibrate: true}))
+	ws.send(JSON.stringify({vibrate: true}));
 }

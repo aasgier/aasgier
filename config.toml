@@ -1,15 +1,16 @@
-# Set IP and port of other RPi.
+# Set IP and port of other system.
 IP = "punpun.xyz:8080"
 
-# Set port to listen to when primary.
+# Set port to launch http server on when primary.
 port = 8080
 
 # Set interval in seconds at which to the execute script
 # and update the graph.
 interval = 2
 
-# Set maximum the amount of X-tics the graph can show.
+# Set maximum the amount of X-tics the graph will show.
 history = 22
 
-# Set path to script to run.
+# Set path to script to execute.
+# TODO: Replace this with actual python script...
 script = "./script/aasgier.sh"
