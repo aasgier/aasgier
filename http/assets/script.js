@@ -92,25 +92,25 @@ ws.onmessage = function(event) {
 	// Update water level text.
 	var l = m.waterLevelList.length-1;
 	if (oldWaterLevelList != m.waterLevelList[l]) {
-		$(".waterLevel").html(m.waterLevelList[l]);
+		$(".waterLevel").text(m.waterLevelList[l]);
 		$(".waterLevel").effect("bounce");
 	}
 	oldWaterLevelList = m.waterLevelList[l];
 
 	// Update vibrate text.
 	if (oldVibrate != m.vibrate) {
-		$(".vibrate").html(m.vibrate.toString());
+		$(".vibrate").text(m.vibrate);
 		$(".vibrate").effect("bounce");
 	}
 	oldVibrate = m.vibrate;
 
 	// Update hostname text.
-	$(".hostname").html(m.hostname);
+	$(".hostname").text(m.hostname);
 
 	// Update uptime text.
 	var uptime = timeSince(new Date(m.uptime));
 	if (oldUptime != uptime) {
-		$(".uptime").html(uptime);
+		$(".uptime").text(uptime);
 		$(".uptime").effect("bounce");
 	}
 	oldUptime = uptime;
