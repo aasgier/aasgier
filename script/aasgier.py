@@ -6,30 +6,26 @@ from random import randint
 # TODO: Use actual TI functions for this.
 vibrate = randint(0,1)
 waterLevel = randint(50,60)
-windSpeed = randint(0,100)
+windSpeed = randint(1,12)
 
-# Check if the gate shoould be closed or open
-# TODO: Use TI function to check if initial closed state should
-# be True or False.
-if waterLevel > 100 and not vibrate:
-    closed = True
-elif waterLevel > 75 and vibrate:
+# Set initial percentage the water needs to be at for the gate to close.
+closep = 100
+
+# Lower closep depending on the circumstances.
+if vibrate:
+    closep -= 20
+for i in range(0, windSpeed):
+    closep -= 5
+# TODO: Add weather info 'n shit...
+
+if waterLevel >= closep:
     closed = True
 else:
     closed = False
 
-# Convert bool to "bool" accepted by toml.
-if vibrate:
-    vibrate = "true"
-else:
-    vibrate = "false"
-if closed:
-    closed = "true"
-else:
-    closed = "false"
-
 # Print toml stuff that gets parsed by the Go program.
-print("vibrate =", vibrate)
+print("vibrate =", str(vibrate).lower())
 print("waterlevel =", waterLevel)
 print("windspeed =", windSpeed)
-#print("closed = ", closed)
+print("closed =", str(closed).lower())
+print("closep =", closep)

@@ -107,7 +107,6 @@ start:
 	var primary bool
 	for !primary {
 		// GET IP as specified in the config and check it for errors.
-
 		if _, err := http.Get("http://" + config.IP); err != nil {
 			log.Println(err)
 

@@ -31,4 +31,5 @@ edit `config.toml` to make it point to the right IP address and such.
 
 ## Notes
 
-Probably runs on every OS, but only tested on GNU/Linux.
+* Probably runs on every OS, but only tested on GNU/Linux.
+* Website probably works on every browser, but only tested on Firefox.
