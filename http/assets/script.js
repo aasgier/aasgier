@@ -13,7 +13,7 @@ var lines = {
 };
 
 window.onload = function() {
-	var ctx = document.getElementById("canvas").getContext("2d");
+	var ctx = $("#canvas")[0].getContext("2d");
 
 	Chart.defaults.global.defaultFontColor = "rgba(53, 55, 58, 1)";
 	Chart.defaults.global.defaultFontFamily = "'proxima-nova-soft', 'sans-serif'";
@@ -92,25 +92,25 @@ ws.onmessage = function(event) {
 	// Update water level text.
 	var l = m.waterLevelList.length-1;
 	if (oldWaterLevelList != m.waterLevelList[l]) {
-		document.getElementsByClassName("waterLevel")[0].textContent = m.waterLevelList[l];
+		$(".waterLevel").html(m.waterLevelList[l]);
 		$(".waterLevel").effect("bounce");
 	}
 	oldWaterLevelList = m.waterLevelList[l];
 
 	// Update vibrate text.
 	if (oldVibrate != m.vibrate) {
-		document.getElementsByClassName("vibrate")[0].textContent = m.vibrate;
+		$(".vibrate").html(m.vibrate.toString());
 		$(".vibrate").effect("bounce");
 	}
 	oldVibrate = m.vibrate;
 
 	// Update hostname text.
-	document.getElementsByClassName("hostname")[0].textContent = m.hostname;
+	$(".hostname").html(m.hostname);
 
 	// Update uptime text.
 	var uptime = timeSince(new Date(m.uptime));
 	if (oldUptime != uptime) {
-		document.getElementsByClassName("uptime")[0].textContent = uptime;
+		$(".uptime").html(uptime);
 		$(".uptime").effect("bounce");
 	}
 	oldUptime = uptime;

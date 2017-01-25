@@ -144,30 +144,6 @@ start:
 
 	e = 0
 	for {
-		// Just to be sure we check if the (should be) secondary http
-		// server isn't actually running, if this is the case something went
-		// wrong. We don't want two concurrent http servers, because that
-		// means we are executing the script two times on both the primary
-		// and on the "secondary".
-		//
-		// Doing that means we could easily run into nasty problems such as the
-		// barrier getting conflicting commands to close *and* to open at the same
-		// time. We could easily fix this by making two separate functions, one for
-		// "close barrier" and one for "open barrier". But hey, Doing that would
-		// also make this entire script (well the non website related stuff anyways)
-		// and pretty much the SNE part of our project useless :^).
-		if _, err := http.Get("http://" + config.IP); err == nil {
-			log.Println("secondary is executing the scripts as well, ceasing to be primary")
-			ctx, err := context.WithTimeout(context.Background(), 4*time.Second)
-			if err != nil {
-				log.Fatal(err)
-			}
-			srv.Shutdown(ctx)
-
-			// Become secondary (hopefully).
-			goto start
-		}
-
 		// Execute script and check if everything went well.
 		log.Printf("executing %s", config.Script)
 		cmd := exec.Command(config.Script)
