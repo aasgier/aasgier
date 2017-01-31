@@ -51,7 +51,7 @@ var initTime = time.Now().Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")
 var hostname, _ = os.Hostname()
 
 func root(w http.ResponseWriter, r *http.Request) {
-	f, err := ioutil.ReadFile("./http/index.html")
+	f, err := ioutil.ReadFile("./HTTP/index.html")
 	if err != nil {
 		log.Println(err)
 	}
@@ -96,7 +96,7 @@ func main() {
 	init := true
 
 start:
-	// Check if http server is already running up, if this is the case
+	// Check if HTTP-server is already running up, if this is the case
 	// it means the other RPi is already running and the script is (most likely)
 	// also working. Thus we make this RPi secondary. The secondary RPi will just
 	// stay in this loop until the primary somehow goes down. If after 6 failed
@@ -128,12 +128,12 @@ start:
 	}
 	init = false
 
-	log.Printf("starting new http server on port %d", config.Port)
+	log.Printf("starting new HTTP-server on port %d", config.Port)
 	mux := http.NewServeMux()
 
 	// Set location of our assets and websocket stuff.
 	mux.Handle("/socket", websocket.Handler(socket))
-	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./http/assets"))))
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./HTTP/assets"))))
 
 	// Read stuff into template, or something.
 	mux.HandleFunc("/", root)
