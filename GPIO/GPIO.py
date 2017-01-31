@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-import RPi.GPIO as GPIO
-import time
 import csv
+import RPi.GPIO as GPIO
 import os
+import time
 
 buttonA = 5
 buttonB = 6
@@ -63,7 +63,7 @@ def getSensorData():
         operateGate(gateGOTO)
         return data
 
-def readadc(adcnum, clockpin, mosipin, misopin, cspin):
+def readADC(adcnum, clockpin, mosipin, misopin, cspin):
         global averageWaterLevel
         if ((adcnum > 7) or (adcnum < 0)):
                 return -1
@@ -121,23 +121,13 @@ def getWaterLevel():
 
     while readCount <= 4:
             # read the analog pin
-            set_volume = readadc(potentiometer_adc, SPICLK, SPIMOSI, SPIMISO, SPICS)
+            set_volume = readADC(potentiometer_adc, SPICLK, SPIMOSI, SPIMISO, SPICS)
             averageWaterLevels.append(int(set_volume))
             # hang out and do nothing for a half second
             readCount += 1
             time.sleep(0.5)
     averageWaterLevel = sum(averageWaterLevels)/len(averageWaterLevels)
     return averageWaterLevel
-
-try:
-    with open("windSpeed.csv", "r") as csvfile:
-        reader = csv.reader(csvfile, delimiter=",")
-        csvfile.close()
-except:
-    with open("windSpeed.csv", "w", newline="") as csvfile:
-        writer = csv.writer(csvfile, delimiter=",")
-        writer.writerow(["windSpeed"] + [0])
-        csvfile.close()
 
 def getVibration():
         global vibrationLevel
@@ -193,9 +183,3 @@ def getWindSpeed():
                         windSpeed = 9
                         break
         return windSpeed
-
-while True:
-    if (GPIO.input(buttonA) == True):
-            print('Sensoren worden gelezen.')
-            getSensorData()
-    time.sleep(0.5)
