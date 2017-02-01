@@ -12,4 +12,4 @@ interval = 2
 history = 22
 
 # Set path to script to execute.
-script = "./script/aasgier.sh"
+script = "./script/aasgier.py"

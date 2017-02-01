@@ -6,7 +6,7 @@ from GPIO.interface import *
 # Get sensor information.
 # TODO: Use actual TI functions for this.
 vibrate = randint(0,1)
-waterLevel = randint(50,60)
+waterLevel = getWaterLevel()
 
 # Set initial percentage the water needs to be at for the gate to close.
 closep = 100
@@ -24,8 +24,8 @@ else:
     closed = False
 
 # Print toml stuff that gets parsed by the Go program.
-print("vibrate =", str(vibrate).lower())
-print("waterlevel =", getWaterLevel())
+print("vibrate = false")
+print("waterLevel =", waterLevel)
 #print("windspeed =", windSpeed)
 #print("closed =", str(closed).lower())
 #print("closep =", closep)

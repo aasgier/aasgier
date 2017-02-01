@@ -131,7 +131,7 @@ def getWaterLevel():
             time.sleep(0.5)
 
     averageWaterLevel = sum(averageWaterLevels)/len(averageWaterLevels)
-    averageWaterLevel = round(averageWaterLevel/750*100)
+    averageWaterLevel = round(averageWaterLevel/1023*100)
 
     return averageWaterLevel
 
