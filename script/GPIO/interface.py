@@ -102,31 +102,37 @@ def getWaterLevel():
     global averageWaterLevel
     global averageWaterLevels
     averageWaterLevels = []
-    # change these as desired - they're the pins connected from the
-    # SPI port on the ADC to the Cobbler
+
+    # Change these as desired - they're the pins connected from the
+    # SPI port on the ADC to the Cobbler.
     SPICLK = 11
     SPIMISO = 9
     SPIMOSI = 10
     SPICS = 8
 
-    # set up the SPI interface pins
+    # Set up the SPI interface pins.
     GPIO.setup(SPIMOSI, GPIO.OUT)
     GPIO.setup(SPIMISO, GPIO.IN)
     GPIO.setup(SPICLK, GPIO.OUT)
     GPIO.setup(SPICS, GPIO.OUT)
 
-    # 10k trim pot connected to adc #0
+    # 10k trim pot connected to adc #0.
     potentiometer_adc = 0;
     readCount = 0
 
-    while readCount <= 4:
-            # read the analog pin
+    # Get the avarage water level of 3 measurements.
+    while readCount <= 3:
+            # Read the analog pin.
             set_volume = readADC(potentiometer_adc, SPICLK, SPIMOSI, SPIMISO, SPICS)
             averageWaterLevels.append(int(set_volume))
-            # hang out and do nothing for a half second
+
+            # Hang out and do nothing for a half second.
             readCount += 1
             time.sleep(0.5)
+
     averageWaterLevel = sum(averageWaterLevels)/len(averageWaterLevels)
+    averageWaterLevel = averageWaterLevel/750*100
+
     return averageWaterLevel
 
 def getVibration():
