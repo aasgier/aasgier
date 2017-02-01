@@ -6,5 +6,5 @@
 
 # Stuff the python scrip should print.
 # I use toml syntax for this.
-echo 'waterlevel = '(random 50 60)
+echo 'waterlevel = '(random 35 65)
 echo 'vibrate    = '(echo -e 'true\nfalse' | shuf -n 1)

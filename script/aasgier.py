@@ -4,28 +4,24 @@ from random import randint
 from GPIO.interface import *
 
 # Get sensor information.
-# TODO: Use actual TI functions for this.
-vibrate = randint(0,1)
-waterLevel = getWaterLevel()
+data = getSensorData()
 
 # Set initial percentage the water needs to be at for the gate to close.
-closep = 100
+closep = 90
 
 # Lower closep depending on the circumstances.
-if vibrate:
+if data['vibration']:
     closep -= 20
-for i in range(0, windSpeed):
+for i in range(0, data['windSpeed']):
     closep -= 5
-# TODO: Add weather info 'n shit...
 
-if waterLevel >= closep:
-    closed = True
+if data['waterLevel'] >= closep:
+    operateGate(True)
 else:
-    closed = False
+    operateGate(False)
 
 # Print toml stuff that gets parsed by the Go program.
-print("vibrate = false")
-print("waterLevel =", waterLevel)
-#print("windspeed =", windSpeed)
-#print("closed =", str(closed).lower())
-#print("closep =", closep)
+#print("vibration =", data['vibration'])
+print("vibration =", str(not bool(randint(0, 3))).lower())
+print("waterLevel =", data['waterLevel'])
+print("windSpeed =", data['windSpeed'])

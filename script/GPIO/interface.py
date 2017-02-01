@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import csv
 import RPi.GPIO as GPIO
 import os
 import time
@@ -8,101 +7,90 @@ import time
 buttonA = 5
 buttonB = 6
 buttonC = 13
+buttonD = 19
+
 ledYellow = 12
 ledGreen = 16
-motor = 18
-buttonD = 19
-klopfSensor = 21
 ledRed = 26
-gateGOTO = True
-averageWaterLevel = []
-averageWaterLevels = 0
-data = {}
-vibrationLevel = 'veilig'
-windSpeed = 0
 
-GPIO.setmode(GPIO.BCM)
+motor = 18
+klopfSensor = 21
+gateGOTO = True
+
 GPIO.setwarnings(False)
-GPIO.setup(motor, GPIO.OUT)
-GPIO.setup(ledRed, GPIO.OUT)
-GPIO.setup(ledYellow, GPIO.OUT)
-GPIO.setup(ledGreen, GPIO.OUT)
+GPIO.setmode(GPIO.BCM)
+
 GPIO.setup(buttonA, GPIO.IN)
 GPIO.setup(buttonB, GPIO.IN)
 GPIO.setup(buttonC, GPIO.IN)
 GPIO.setup(buttonD, GPIO.IN)
+
+GPIO.setup(ledYellow, GPIO.OUT)
+GPIO.setup(ledGreen, GPIO.OUT)
+GPIO.setup(ledRed, GPIO.OUT)
+
+GPIO.setup(motor, GPIO.OUT)
 GPIO.setup(klopfSensor, GPIO.IN)
 
 def operateGate(gateGOTO):
-        global p
-        p = GPIO.PWM(18, 50)
-        p.start(7.5)
-        if (gateGOTO == False):
-                p.ChangeDutyCycle(2.5)
-                gateGOTO = True
-                print('Kering geopend.')
-        elif (gateGOTO == True):
-                p.ChangeDutyCycle(12.5)
-                gateGOTO = False
-                print('Kering gesloten.')
-        return gateGOTO
+    global p
+    p = GPIO.PWM(18, 50)
+    p.start(10)
+
+    # True is close!
+    # TODO: Use while loop to make it one fluid motion.
+    if (gateGOTO == False):
+        p.ChangeDutyCycle(8)
+    elif (gateGOTO == True):
+        p.ChangeDutyCycle(16)
+
+    return gateGOTO
 
 def getSensorData():
-        global data
-        global vibrationLevel
-        global windSpeed
-        global gateGOTO
-        getWaterLevel()
-        data['Waterniveau'] = averageWaterLevel
-        print('Waterniveau gemeten.')
-        getVibration()
-        data['Grondvibratie'] = vibrationLevel
-        getWindSpeed()
-        data['Windsnelheid'] = windSpeed
-        print(data)
-        operateGate(gateGOTO)
-        return data
+    #global gateGOTO
+    data = {}
+
+    data['waterLevel'] = getWaterLevel()
+    data['vibration'] = getVibration()
+    data['windSpeed'] = getWindSpeed()
+    #operateGate(gateGOTO)
+    return data
 
 def readADC(adcnum, clockpin, mosipin, misopin, cspin):
-        global averageWaterLevel
-        if ((adcnum > 7) or (adcnum < 0)):
-                return -1
-        GPIO.output(cspin, True)
+    if ((adcnum > 7) or (adcnum < 0)):
+        return -1
+    GPIO.output(cspin, True)
 
-        GPIO.output(clockpin, False)  # start clock low
-        GPIO.output(cspin, False)     # bring CS low
+    GPIO.output(clockpin, False)  # start clock low
+    GPIO.output(cspin, False)     # bring CS low
 
-        commandout = adcnum
-        commandout |= 0x18  # start bit + single-ended bit
-        commandout <<= 3    # we only need to send 5 bits here
-        for i in range(5):
-                if (commandout & 0x80):
-                        GPIO.output(mosipin, True)
-                else:
-                        GPIO.output(mosipin, False)
-                commandout <<= 1
-                GPIO.output(clockpin, True)
-                GPIO.output(clockpin, False)
+    commandout = adcnum
+    commandout |= 0x18  # start bit + single-ended bit
+    commandout <<= 3    # we only need to send 5 bits here
+    for i in range(5):
+        if (commandout & 0x80):
+            GPIO.output(mosipin, True)
+        else:
+            GPIO.output(mosipin, False)
+        commandout <<= 1
+        GPIO.output(clockpin, True)
+        GPIO.output(clockpin, False)
 
-        adcout = 0
-        # read in one empty bit, one null bit and 10 ADC bits
-        for i in range(12):
-                GPIO.output(clockpin, True)
-                GPIO.output(clockpin, False)
-                adcout <<= 1
-                if (GPIO.input(misopin)):
-                        adcout |= 0x1
+    adcout = 0
+    # read in one empty bit, one null bit and 10 ADC bits
+    for i in range(12):
+        GPIO.output(clockpin, True)
+        GPIO.output(clockpin, False)
+        adcout <<= 1
+        if (GPIO.input(misopin)):
+            adcout |= 0x1
 
-        GPIO.output(cspin, True)
+    GPIO.output(cspin, True)
 
-        adcout >>= 1       # first bit is 'null' so drop it
-        return adcout
+    adcout >>= 1       # first bit is 'null' so drop it
+    return adcout
 
 def getWaterLevel():
-    global averageWaterLevel
-    global averageWaterLevels
-    averageWaterLevels = []
-
     # Change these as desired - they're the pins connected from the
     # SPI port on the ADC to the Cobbler.
     SPICLK = 11
@@ -118,74 +106,45 @@ def getWaterLevel():
 
     # 10k trim pot connected to adc #0.
     potentiometer_adc = 0;
-    readCount = 0
 
-    # Get the avarage water level of 3 measurements.
-    while readCount <= 3:
-            # Read the analog pin.
-            set_volume = readADC(potentiometer_adc, SPICLK, SPIMOSI, SPIMISO, SPICS)
-            averageWaterLevels.append(int(set_volume))
+    # Convert water level to something nice (kinda).
+    waterLevelRaw = readADC(potentiometer_adc, SPICLK, SPIMOSI, SPIMISO, SPICS)
+    waterLevel = round((waterLevelRaw / 1023 * 100) - 20)
+    if waterLevel < 1:
+        waterLevel = 0
 
-            # Hang out and do nothing for a half second.
-            readCount += 1
-            time.sleep(0.5)
-
-    averageWaterLevel = sum(averageWaterLevels)/len(averageWaterLevels)
-    averageWaterLevel = round(averageWaterLevel/1023*100)
-
-    return averageWaterLevel
+    return waterLevel
 
 def getVibration():
-        global vibrationLevel
-        if (GPIO.input(klopfSensor) == False):
-                vibrationLevel = 'Onveilig'
-        return vibrationLevel
+    if (GPIO.input(klopfSensor) == False):
+        vibration = 'true'
+    else:
+        vibration = 'false'
+
+        return vibration
 
 def getWindSpeed():
-        global windSpeed
-        print('Kies windsnelheid:')
-        while True:
-                if (GPIO.input(buttonD) == True):
-                        GPIO.output(26, False)
-                        GPIO.output(12, False)
-                        GPIO.output(16, False)
-                        #print("knop D doet het goed")
-                        with open("windSpeed.csv", "w", newline="") as csvfile:
-                            writer = csv.writer(csvfile, delimiter=",")
-                            writer.writerow(["windSpeed"] + [0])
-                            csvfile.close()
-                            break
-                elif (GPIO.input(buttonC) == True):
-                        #print("knop C doet het goed")
-                        GPIO.output(26, False)
-                        GPIO.output(12, False)
-                        GPIO.output(16, True)
-                        with open("windSpeed.csv", "w", newline="") as csvfile:
-                            writer = csv.writer(csvfile, delimiter=",")
-                            writer.writerow(["windSpeed"] + [3])
-                            csvfile.close()
-                        windSpeed = 3
-                        break
-                elif (GPIO.input(buttonB) == True):
-                        #print("knop B doet het goed")
-                        GPIO.output(26, False)
-                        GPIO.output(16, False)
-                        GPIO.output(12, True)
-                        with open("windSpeed.csv", "w", newline="") as csvfile:
-                            writer = csv.writer(csvfile, delimiter=",")
-                            writer.writerow(["windSpeed"] + [6])
-                            csvfile.close()
-                        windSpeed = 6
-                        break
-                elif (GPIO.input(buttonA) == True):
-                        #print("knop A doet het goed")
-                        GPIO.output(26, True)
-                        GPIO.output(12, False)
-                        GPIO.output(16, False)
-                        with open("windSpeed.csv", "w", newline="") as csvfile:
-                            writer = csv.writer(csvfile, delimiter=",")
-                            writer.writerow(["windSpeed"] + [9])
-                            csvfile.close()
-                        windSpeed = 9
-                        break
-        return windSpeed
+    windSpeed = 0
+
+    # Change windspeed depending on what button is pressed at the time.
+    if (GPIO.input(buttonA) == True):
+        GPIO.output(26, True)
+        GPIO.output(12, False)
+        GPIO.output(16, False)
+        windSpeed = 9
+    elif (GPIO.input(buttonB) == True):
+        GPIO.output(26, False)
+        GPIO.output(16, False)
+        GPIO.output(12, True)
+        windSpeed = 6
+    elif (GPIO.input(buttonC) == True):
+        GPIO.output(26, False)
+        GPIO.output(12, False)
+        GPIO.output(16, True)
+        windSpeed = 3
+    else:
+        GPIO.output(26, False)
+        GPIO.output(12, False)
+        GPIO.output(16, False)
+
+    return windSpeed
