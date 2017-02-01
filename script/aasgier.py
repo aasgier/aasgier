@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from random import randint
+import GPIO.interface
 
 # Get sensor information.
 # TODO: Use actual TI functions for this.
@@ -29,3 +30,5 @@ print("waterlevel =", waterLevel)
 print("windspeed =", windSpeed)
 print("closed =", str(closed).lower())
 print("closep =", closep)
+
+print(getWaterLevel())
