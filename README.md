@@ -2,25 +2,27 @@
 
 ## Installation
 
-```shell
-go get github.com/aasgier/aasgier
-```
-
 This program depends on `python3` and `go`.
 
-Make sure to edit `config.toml` to suit your needs.
+```shell
+go get -u -v -fix github.com/aasgier/aasgier
+cd $GOPATH/src/github.com/aasgier/aasgier
+go build -v
+```
+
+if you don't have a `$GOPATH` set, `go` will use `$HOME/go`.
 
 
 ## Usage
 
-Execute the `aasgier` binary on one or more systems, again, make sure to
+Execute the `$GOPATH/src/github.com/aasgier/aasgier/aasgier` binary on one or more systems, make sure to
 edit `config.toml` to make it point to the right IP address and such.
 
 
 ## Authors
 
 * Camille Scholtz ([onodera-punpun](https://github.com/onodera-punpun))
-* Eelke Feitz
+* Eelke Feitz ([EelkeFeitz](https://github.com/EelkeFeitz))
 * Fabiënne Oskam
 * Joost van Bussum
 * Ismael Hassan
